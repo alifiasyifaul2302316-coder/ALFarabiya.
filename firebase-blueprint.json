@@ -1,0 +1,68 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "User UID" },
+        "email": { "type": "string", "description": "User email address" },
+        "displayName": { "type": "string", "description": "User display name" },
+        "photoURL": { "type": "string", "description": "User profile avatar URL" },
+        "role": { "type": "string", "description": "User role: user or admin", "enum": ["user", "admin"] },
+        "createdAt": { "type": "string", "description": "Account creation timestamp" },
+        "lastLoginAt": { "type": "string", "description": "Last sign-in timestamp" }
+      },
+      "required": ["id", "email"]
+    },
+    "Note": {
+      "title": "Note",
+      "description": "Personal note or document belonging to a user",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Note unique ID" },
+        "userId": { "type": "string", "description": "Owner user ID" },
+        "title": { "type": "string", "description": "Note title" },
+        "content": { "type": "string", "description": "Main note body" },
+        "category": { "type": "string", "description": "Category or folder tag" },
+        "summary": { "type": "string", "description": "AI-generated summary" },
+        "isPinned": { "type": "boolean", "description": "Whether note is pinned" },
+        "createdAt": { "type": "string", "description": "Created ISO timestamp" },
+        "updatedAt": { "type": "string", "description": "Last updated ISO timestamp" }
+      },
+      "required": ["id", "userId", "title"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "Personal task or to-do item for a user",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Task unique ID" },
+        "userId": { "type": "string", "description": "Owner user ID" },
+        "title": { "type": "string", "description": "Task title" },
+        "description": { "type": "string", "description": "Task description or steps" },
+        "status": { "type": "string", "description": "Task status", "enum": ["todo", "in_progress", "completed"] },
+        "priority": { "type": "string", "description": "Task priority", "enum": ["low", "medium", "high"] },
+        "category": { "type": "string", "description": "Task category tag" },
+        "dueDate": { "type": "string", "description": "Due date" },
+        "createdAt": { "type": "string", "description": "Created ISO timestamp" },
+        "updatedAt": { "type": "string", "description": "Updated ISO timestamp" }
+      },
+      "required": ["id", "userId", "title", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile document"
+    },
+    "/users/{userId}/notes/{noteId}": {
+      "schema": "Note",
+      "description": "User personal notes subcollection"
+    },
+    "/users/{userId}/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "User personal tasks subcollection"
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "NexusAI Workspace",
+  "description": "Platform produktivitas cerdas dengan Firebase Auth, Firestore realtime per user, asisten Gemini AI server-side, dan panel admin.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

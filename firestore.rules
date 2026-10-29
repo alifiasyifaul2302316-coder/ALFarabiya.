@@ -1,0 +1,55 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == "alifia.syifaul.2302316@students.um.ac.id" ||
+        request.auth.uid == "admin-alifia-primary"
+      );
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId) || isAdmin();
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+
+      // User's personal notes subcollection
+      match /notes/{noteId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if (isOwner(userId) || isAdmin()) && isValidId(noteId);
+        allow update: if (isOwner(userId) || isAdmin()) && isValidId(noteId);
+        allow delete: if (isOwner(userId) || isAdmin()) && isValidId(noteId);
+      }
+
+      // User's personal tasks subcollection
+      match /tasks/{taskId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if (isOwner(userId) || isAdmin()) && isValidId(taskId);
+        allow update: if (isOwner(userId) || isAdmin()) && isValidId(taskId);
+        allow delete: if (isOwner(userId) || isAdmin()) && isValidId(taskId);
+      }
+    }
+  }
+}
