@@ -1,12 +1,24 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
-import firebaseConfig from '../../firebase-applet-config.json';
+
+export const firebaseConfig = {
+  apiKey: "AIzaSyCu-thF-uUROm9Mon-s5YqjRPbFKo1Qwxg",
+  authDomain: "al-farabiya.firebaseapp.com",
+  projectId: "al-farabiya",
+  storageBucket: "al-farabiya.firebasestorage.app",
+  messagingSenderId: "598798647290",
+  appId: "1:598798647290:web:c3e2ab5b9571526e182e43",
+  firestoreDatabaseId: ""
+};
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-// CRITICAL: Must pass firebaseConfig.firestoreDatabaseId to getFirestore
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+// Use custom firestoreDatabaseId if specified, otherwise connect to default Firestore database
+export const db = firebaseConfig.firestoreDatabaseId
+  ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
+  : getFirestore(app);
+
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
@@ -68,7 +80,6 @@ export async function testFirestoreConnection(): Promise<boolean> {
       console.warn('Firebase client is offline or cannot reach Firestore currently.');
       return false;
     }
-    // Any other error (like permission denied for non-existent test doc) means network reached Firestore
     return true;
   }
 }

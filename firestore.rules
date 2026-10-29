@@ -2,12 +2,13 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Default-deny catch-all
+    
+    // Default-deny catch-all: Blokir semua akses secara default
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // Helper functions
+    // Helper functions keamanan
     function isSignedIn() {
       return request.auth != null;
     }
@@ -20,36 +21,61 @@ service cloud.firestore {
       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
-    function isAdmin() {
-      return isSignedIn() && (
-        request.auth.token.email == "alifia.syifaul.2302316@students.um.ac.id" ||
-        request.auth.uid == "admin-alifia-primary"
-      );
+    // ===============================================================
+    // 1. DATA PENGGUNA TERISOLASI PER USER (Subkoleksi Hierarkis)
+    // ===============================================================
+    // Setiap user hanya memiliki akses ke dokumen profil miliknya sendiri di /users/{userId}
+    match /users/{userId} {
+      // User hanya bisa melihat profilnya sendiri (tidak bisa me-list semua user di database)
+      allow get: if isOwner(userId);
+      allow list: if false; 
+      allow create: if isOwner(userId) && isValidId(userId);
+      allow update: if isOwner(userId);
+      allow delete: if false; // Mencegah penghapusan akun yang tidak disengaja
+
+      // Subkoleksi Catatan Pribadi (/users/{userId}/notes/{noteId})
+      match /notes/{noteId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) 
+          && isValidId(noteId) 
+          && request.resource.data.userId == request.auth.uid;
+        allow update, delete: if isOwner(userId) && isValidId(noteId);
+      }
+
+      // Subkoleksi Tugas Pribadi (/users/{userId}/tasks/{taskId})
+      match /tasks/{taskId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) 
+          && isValidId(taskId) 
+          && request.resource.data.userId == request.auth.uid;
+        allow update, delete: if isOwner(userId) && isValidId(taskId);
+      }
+
+      // Wildcard subkoleksi data personal lainnya di bawah akun user
+      match /{subcollection}/{docId} {
+        allow read, write: if isOwner(userId) && isValidId(docId);
+      }
     }
 
-    // Users collection
-    match /users/{userId} {
-      allow get: if isOwner(userId) || isAdmin();
-      allow list: if isAdmin();
-      allow create: if isOwner(userId) || isAdmin();
-      allow update: if isOwner(userId) || isAdmin();
-      allow delete: if isAdmin();
+    // ===============================================================
+    // 2. DATA PADA KOLEKSI LEVEL ATAS (Root Collections dengan field userId)
+    // ===============================================================
+    // Jika aplikasi menyimpan catatan di root /notes
+    match /notes/{noteId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() 
+        && request.resource.data.userId == request.auth.uid 
+        && isValidId(noteId);
+      allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
 
-      // User's personal notes subcollection
-      match /notes/{noteId} {
-        allow read: if isOwner(userId) || isAdmin();
-        allow create: if (isOwner(userId) || isAdmin()) && isValidId(noteId);
-        allow update: if (isOwner(userId) || isAdmin()) && isValidId(noteId);
-        allow delete: if (isOwner(userId) || isAdmin()) && isValidId(noteId);
-      }
-
-      // User's personal tasks subcollection
-      match /tasks/{taskId} {
-        allow read: if isOwner(userId) || isAdmin();
-        allow create: if (isOwner(userId) || isAdmin()) && isValidId(taskId);
-        allow update: if (isOwner(userId) || isAdmin()) && isValidId(taskId);
-        allow delete: if (isOwner(userId) || isAdmin()) && isValidId(taskId);
-      }
+    // Jika aplikasi menyimpan tugas di root /tasks
+    match /tasks/{taskId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() 
+        && request.resource.data.userId == request.auth.uid 
+        && isValidId(taskId);
+      allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
   }
 }
